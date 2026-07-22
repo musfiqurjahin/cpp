@@ -1,15 +1,16 @@
 /* =====================================================================
-      my_cpp_journey.exe — built almost entirely in JavaScript.
-      The HTML above is just a shell: <head><title></title></head><body>.
-      Everything else — fonts, icon font, CSS, and every DOM node on the
-      page — is created and injected right here in JS.
-      ===================================================================== */
+   my_cpp_journey.exe — built almost entirely in JavaScript.
+   The HTML above is just a shell: <head><title></title></head><body>.
+   Everything else — fonts, icons, CSS, and every DOM node on the page —
+   is created and injected right here in JS. Icons are inline SVG
+   (no icon-font CDN), so nothing can silently fail to render.
+   ===================================================================== */
 
 (function () {
     "use strict";
 
     /* ---------------------------------------------------------------
-       0. EXTERNAL RESOURCES (fonts + icon font), loaded via JS
+       0. EXTERNAL RESOURCES (fonts only — no icon font needed anymore)
     --------------------------------------------------------------- */
     function loadLink(rel, href, extra) {
         const l = document.createElement("link");
@@ -21,23 +22,77 @@
     }
     loadLink("preconnect", "https://fonts.googleapis.com");
     loadLink("stylesheet", "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
-    loadLink("stylesheet", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
 
     /* ---------------------------------------------------------------
        1. DATA (topics, note links, config)
     --------------------------------------------------------------- */
     const VIDEO_ID = "-TkoO8Z07hI";
-    const START_SECONDS = 924;
+    const START_SECONDS = 1;
 
     // Fill these in, in the same order as `topics` below.
     // "" or "#" = not done yet. A real URL / relative path = done.
     const noteLinks = [
-        "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", ""
+        "", // 01 - Tutorial
+        "", // 02 - Variables and basic data types
+        "", // 03 - Const
+        "", // 04 - Namespaces
+        "", // 05 - Typedef and type aliases
+        "", // 06 - Arithmetic operators
+        "", // 07 - Type conversion
+        "", // 08 - User input
+        "", // 09 - Useful math related functions
+        "", // 10 - Hypotenuse calculator practice program
+        "", // 11 - If statements
+        "", // 12 - Switches
+        "", // 13 - Console calculator program
+        "", // 14 - Ternary operator
+        "", // 15 - Logical operators
+        "", // 16 - Temperature conversion program
+        "", // 17 - Useful string methods in C++
+        "", // 18 - While loops
+        "", // 19 - Do while loops
+        "", // 20 - For loops
+        "", // 21 - Break and continue
+        "", // 22 - Nested loops
+        "", // 23 - Random number generator
+        "", // 24 - Random event generator
+        "", // 25 - Number guessing game
+        "", // 26 - User defined functions
+        "", // 27 - Return keyword
+        "", // 28 - Overloaded functions
+        "", // 29 - Variable scope
+        "", // 30 - Banking practice program
+        "", // 31 - Rock paper scissors game
+        "", // 32 - Arrays
+        "", // 33 - Sizeof() operator
+        "", // 34 - Iterate over an array
+        "", // 35 - Foreach loop
+        "", // 36 - Pass array to a function
+        "", // 37 - Search an array for an element
+        "", // 38 - Sort an array
+        "", // 39 - Fill() function
+        "", // 40 - Fill an array with user input
+        "", // 41 - Multidimensional arrays
+        "", // 42 - Quiz game
+        "", // 43 - Memory addresses
+        "", // 44 - Pass by value vs pass by reference
+        "", // 45 - Const parameters
+        "", // 46 - Credit card validator program
+        "", // 47 - Pointers
+        "", // 48 - Null pointers
+        "", // 49 - Tic tac toe game
+        "", // 50 - Dynamic memory
+        "", // 51 - Recursion
+        "", // 52 - Function templates
+        "", // 53 - Structs
+        "", // 54 - Pass structs as arguments
+        "", // 55 - Enums
+        "", // 56 - Object oriented programming
+        "", // 57 - Constructors
+        "", // 58 - Constructor overloading
+        "", // 59 - Getters and setters
+        "", // 60 - Inheritance
+
     ];
 
     const topics = [
@@ -58,7 +113,49 @@
     const doneState = new Array(topics.length).fill(false);
 
     /* ---------------------------------------------------------------
-       2. STYLES — one big CSS string, injected as a <style> tag
+       2. ICON SET — inline SVG (Lucide-style), self-contained.
+          No external icon-font request, so nothing can fail to load.
+    --------------------------------------------------------------- */
+    const ICONS = {
+        code: `<polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline>`,
+        home: `<path d="M3 9.5 12 3l9 6.5"></path><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"></path>`,
+        play: `<polygon points="6 3 20 12 6 21 6 3"></polygon>`,
+        pause: `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`,
+        book: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path>`,
+        "pie-chart": `<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path>`,
+        terminal: `<polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line>`,
+        "list-checks": `<path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path>`,
+        film: `<rect x="2" y="2" width="20" height="20" rx="2"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line>`,
+        clapperboard: `<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"></path><path d="m6.2 5.3 3.1 3.9"></path><path d="m12.4 3.4 3.1 4"></path><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>`,
+        dot: `<circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"></circle>`,
+        shield: `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>`,
+        "rotate-ccw": `<path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"></path><path d="M3 3v5h5"></path>`,
+        "rotate-cw": `<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"></path><path d="M21 3v5h-5"></path>`,
+        maximize: `<path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>`,
+        "volume-2": `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>`,
+        "volume-1": `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>`,
+        "volume-x": `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line>`,
+        search: `<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>`,
+        circle: `<circle cx="12" cy="12" r="9"></circle>`,
+        "check-circle-fill": `<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"></circle><path d="M8 12.5l2.5 2.5 5.5-5.5" style="stroke:var(--bg)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>`,
+        "external-link": `<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>`,
+        info: `<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="16" x2="12" y2="11.5"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>`,
+        flame: `<path d="M8.5 14.5a2.5 2.5 0 0 0 2.5-2.5c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>`,
+        flag: `<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>`,
+        heart: `<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z" fill="currentColor" stroke="none"></path>`
+    };
+
+    function svgIcon(name, opts = {}) {
+        const body = ICONS[name] || ICONS.circle;
+        const cls = "icon" + (opts.class ? " " + opts.class : "");
+        const idAttr = opts.id ? ` id="${opts.id}"` : "";
+        return `<svg${idAttr} class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+    }
+    // shorthand kept for call-site brevity
+    const icon = (name, extraClass = "") => svgIcon(name, { class: extraClass });
+
+    /* ---------------------------------------------------------------
+       3. STYLES — one big CSS string, injected as a <style> tag
     --------------------------------------------------------------- */
     const CSS = `
   :root{
@@ -68,7 +165,9 @@
     --pink:#ff7597; --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:smooth;
+      caret-color: transparent;}
+
   body{
     background:
       radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,180,84,.09), transparent),
@@ -78,6 +177,7 @@
   }
   a{color:inherit;text-decoration:none;}
   ::selection{background:var(--amber);color:#1a1300;}
+  .icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;flex:none;}
   .reveal{opacity:0;transform:translateY(20px);animation:fadeInUp .7s ease forwards;}
   @keyframes fadeInUp{to{opacity:1;transform:translateY(0);}}
   section.reveal:nth-of-type(1){animation-delay:.05s;}
@@ -95,18 +195,18 @@
   .titlebar nav a{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);padding:7px 13px;
     border-radius:6px;transition:.15s;display:flex;align-items:center;gap:7px;}
   .titlebar nav a:hover{color:var(--amber);background:var(--amber-soft);}
-  .titlebar nav a i{font-size:11px;}
+  .titlebar nav a .icon{font-size:11px;}
   section{padding:88px 20px;max-width:1000px;margin:0 auto;}
   .hero{padding-top:120px;}
   .eyebrow{font-family:var(--mono);font-size:13px;color:var(--teal);letter-spacing:.06em;margin-bottom:18px;
     display:flex;align-items:center;gap:9px;}
-  .eyebrow i{font-size:12px;}
+  .eyebrow .icon{font-size:12px;}
   h1{font-family:var(--mono);font-weight:800;letter-spacing:-0.01em;font-size:clamp(30px,5.2vw,54px);
     line-height:1.15;color:var(--text);}
   h1 .brace{color:var(--amber);}
   .cursor{display:inline-block;width:.5ch;background:var(--amber);animation:blink 1s steps(1) infinite;margin-left:4px;}
   @keyframes blink{50%{opacity:0;}}
-  .hero p.sub{margin-top:18px;max-width:580px;color:var(--text-dim);font-size:16px;}
+  .hero p.sub{margin-top:18px;max-width:560px;color:var(--text-dim);font-size:16px;}
   .hero p.sub b{color:var(--text);font-weight:600;}
   .hero-stats{display:flex;gap:28px;margin-top:38px;flex-wrap:wrap;}
   .hstat{font-family:var(--mono);}
@@ -123,7 +223,7 @@
     box-shadow:0 20px 60px -20px rgba(0,0,0,.6);}
   .editor-tab{display:flex;align-items:center;gap:8px;background:var(--panel-2);padding:11px 18px;
     border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12.5px;color:var(--text-dim);}
-  .editor-tab i{color:var(--pink);font-size:9px;}
+  .tab-dot{color:var(--pink);font-size:9px;}
   .editor-tab .badge{margin-left:auto;font-size:10.5px;background:var(--teal-soft);color:var(--teal);
     padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:5px;}
   .player-shell{position:relative;width:100%;aspect-ratio:16/9;background:#000;}
@@ -142,8 +242,8 @@
     box-shadow:0 0 0 10px rgba(255,180,84,.08),0 10px 40px rgba(0,0,0,.4);transition:.25s ease;opacity:1;}
   .center-play:hover{transform:translate(-50%,-50%) scale(1.08);background:#ffc576;}
   .center-play.playing{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(0.7);}
-  .center-play i{margin-left:3px;}
-  .center-play.is-pause i{margin-left:0;}
+  .center-play .icon{margin-left:3px;}
+  .center-play.is-pause .icon{margin-left:0;}
   .controls{display:flex;align-items:center;gap:10px;padding:12px 16px;
     background:linear-gradient(180deg,var(--panel-2),var(--bg-soft));border-top:1px solid var(--border);flex-wrap:wrap;}
   .ctrl-btn{background:var(--bg-soft);border:1px solid var(--border);color:var(--text);width:36px;height:36px;
@@ -177,7 +277,7 @@
     display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
   .kbd-hint kbd{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:1px 6px;
     font-size:10.5px;color:var(--text-dim);}
-  .notes-intro{color:var(--text-dim);font-size:14px;margin-bottom:26px;max-width:660px;}
+  .notes-intro{color:var(--text-dim);font-size:14px;margin-bottom:26px;max-width:600px;}
   .notes-intro code{background:var(--panel);border:1px solid var(--border);padding:1px 6px;border-radius:4px;
     color:var(--teal);font-size:12.5px;}
   .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;}
@@ -197,12 +297,9 @@
   .note-card.done .note-check{color:var(--amber);}
   .note-title{font-size:12.8px;font-weight:600;color:var(--text);line-height:1.4;}
   .note-open-hint{font-size:10.5px;color:var(--text-dimmer);display:flex;align-items:center;gap:5px;}
-  .note-open-hint i{font-size:9px;}
-  .note-hint{font-family:var(--mono);font-size:11.5px;color:var(--text-dimmer);margin-top:20px;display:flex;
-    gap:8px;align-items:flex-start;}
-  .note-hint i{margin-top:2px;color:var(--teal);}
+  .note-open-hint .icon{font-size:9px;}
   .search-wrap{position:relative;margin-bottom:18px;max-width:340px;}
-  .search-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-dimmer);font-size:12px;}
+  .search-wrap .icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-dimmer);font-size:12px;}
   .search-input{width:100%;font-family:var(--mono);font-size:12.5px;color:var(--text);background:var(--panel);
     border:1px solid var(--border);border-radius:9px;padding:9px 12px 9px 32px;outline:none;transition:.15s;}
   .search-input:focus{border-color:var(--teal);}
@@ -223,22 +320,22 @@
   .pstat-row .val b{color:var(--text);}
   .pstat-hint{margin-top:4px;font-family:var(--mono);font-size:11.5px;color:var(--text-dimmer);
     display:flex;gap:8px;align-items:flex-start;line-height:1.6;}
-  .pstat-hint i{margin-top:2px;color:var(--teal);flex:none;}
+  .pstat-hint .icon{margin-top:2px;color:var(--teal);flex:none;}
   .pstat-hint code{background:var(--bg-soft);border:1px solid var(--border);padding:1px 5px;border-radius:4px;
     color:var(--amber);font-size:11px;}
   .streak-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
   .streak-chip{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);background:var(--bg-soft);
     border:1px solid var(--border);padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:7px;}
-  .streak-chip i{color:var(--pink);}
+  .streak-chip .icon{color:var(--pink);}
   footer{text-align:center;padding:50px 20px 70px;font-family:var(--mono);font-size:12px;color:var(--text-dimmer);
     display:flex;align-items:center;justify-content:center;gap:8px;}
-  footer i{color:var(--pink);}
+  footer .icon{color:var(--pink);}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);
     border:1px solid var(--teal);color:var(--text);font-family:var(--mono);font-size:12.5px;padding:11px 18px;
     border-radius:10px;box-shadow:0 14px 40px -14px rgba(0,0,0,.6);opacity:0;pointer-events:none;
     transition:.25s ease;z-index:300;display:flex;align-items:center;gap:8px;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  .toast i{color:var(--teal);}
+  .toast .icon{color:var(--teal);}
   @media (max-width:600px){
     section{padding:60px 16px;}
     .titlebar nav{display:none;}
@@ -255,7 +352,7 @@
     injectStyles(CSS);
 
     /* ---------------------------------------------------------------
-       3. DOM BUILDING HELPERS
+       4. DOM BUILDING HELPERS
     --------------------------------------------------------------- */
     function el(tag, opts = {}, children = []) {
         const node = document.createElement(tag);
@@ -269,10 +366,9 @@
         children.forEach(c => c && node.appendChild(c));
         return node;
     }
-    const icon = (name, extraClass = "") => `<i class="fa-solid ${name} ${extraClass}"></i>`;
 
     /* ---------------------------------------------------------------
-       4. TITLEBAR
+       5. TITLEBAR
     --------------------------------------------------------------- */
     function buildTitlebar() {
         const dots = el("div", { class: "dots" }, [
@@ -280,13 +376,13 @@
             el("span", { class: "dot yellow" }),
             el("span", { class: "dot green" })
         ]);
-        const filename = el("span", { class: "filename", html: `${icon("fa-code")}my_cpp_journey.html` });
+        const filename = el("span", { class: "filename", html: `${icon("code")}Learning.cpp` });
 
         const navLinks = [
-            ["#home", "fa-house", "home"],
-            ["#video", "fa-play", "video"],
-            ["#notes", "fa-book", "notes"],
-            ["#progress", "fa-chart-pie", "progress"]
+            ["#home", "home", "home"],
+            ["#video", "play", "video"],
+            ["#notes", "book", "notes"],
+            ["#progress", "pie-chart", "progress"]
         ].map(([href, ic, label]) =>
             el("a", { attrs: { href }, html: `${icon(ic)}${label}` })
         );
@@ -296,23 +392,23 @@
     }
 
     /* ---------------------------------------------------------------
-       5. HERO
+       6. HERO
     --------------------------------------------------------------- */
     function buildHero() {
-        const eyebrow = el("div", { class: "eyebrow reveal", html: `${icon("fa-terminal")}personal learning log` });
+        const eyebrow = el("div", { class: "eyebrow reveal", html: `${icon("terminal")}personal learning log` });
         const h1 = el("h1", {
             class: "reveal",
             html: `<span class="brace">&lt;</span>Learning C++<span class="brace">/&gt;</span><span class="cursor">&nbsp;</span>`
         });
         const sub = el("p", {
             class: "sub reveal",
-            html: `Following <b>Bro Code's</b> full C++ course on YouTube. Professional player, ${topics.length} tracked notes, and a live progress chart — all in one page.`
+            html: `Following <b>Bro Code's</b> full C++ course — custom player, ${topics.length} tracked notes, live progress.`
         });
 
         const stats = [
-            ["fa-list-check", String(topics.length), "TOPICS TO COVER"],
-            ["fa-clapperboard", "1", "FULL COURSE VIDEO"],
-            ["fa-chart-pie", "LIVE", "PROGRESS TRACKING"]
+            ["list-checks", String(topics.length), "TOPICS"],
+            ["film", "1", "COURSE VIDEO"],
+            ["pie-chart", "LIVE", "PROGRESS"]
         ].map(([ic, n, l]) =>
             el("div", { class: "hstat" }, [
                 el("div", { class: "n", html: `${icon(ic)}${n}` }),
@@ -324,7 +420,7 @@
         return el("section", { class: "hero", id: "home" }, [eyebrow, h1, sub, heroStats]);
     }
 
-    function buildSectionHead(tag, iconName, num, title, sub) {
+    function buildSectionHead(iconName, num, title, sub) {
         return el("div", { class: "sec-head" }, [
             el("div", { class: "sec-icon", html: icon(iconName) }),
             el("span", { class: "sec-tag", text: num }),
@@ -334,14 +430,14 @@
     }
 
     /* ---------------------------------------------------------------
-       6. VIDEO SECTION (custom YouTube player)
+       7. VIDEO SECTION (custom YouTube player)
     --------------------------------------------------------------- */
     function buildVideoSection() {
-        const head = buildSectionHead("fa-clapperboard", "01", "the video", "Bro Code · C++ Full Course");
+        const head = buildSectionHead("clapperboard", "01", "the video", "Bro Code · C++ Full Course");
 
         const ytPlayerDiv = el("div", { id: "ytPlayer" });
         const clickShield = el("div", { class: "click-shield", id: "clickShield" });
-        const centerPlay = el("button", { class: "center-play", id: "centerPlay", html: icon("fa-play") });
+        const centerPlay = el("button", { class: "center-play", id: "centerPlay", html: icon("play") });
         const loaderOverlay = el("div", { class: "loader-overlay", id: "loaderOverlay" }, [
             el("div", { class: "spinner" }),
             el("span", { text: "loading player…" })
@@ -368,21 +464,21 @@
             });
 
         const volWrap = el("div", { class: "vol-wrap", id: "volWrap" }, [
-            el("button", { class: "ctrl-btn", id: "btnMute", attrs: { title: "Mute/Unmute" }, html: `<i class="fa-solid fa-volume-high" id="volIcon"></i>` }),
+            el("button", { class: "ctrl-btn", id: "btnMute", attrs: { title: "Mute/Unmute" }, html: svgIcon("volume-2", { id: "volIcon" }) }),
             el("div", { class: "vol-track" }, [el("input", { id: "volBar", attrs: { type: "range", min: "0", max: "100", value: "100" } })])
         ]);
 
         const controls = el("div", { class: "controls" }, [
-            el("button", { class: "ctrl-btn", id: "btnBack10", attrs: { title: "Back 10s" }, html: icon("fa-rotate-left") }),
-            el("button", { class: "ctrl-btn play", id: "btnPlay", attrs: { title: "Play/Pause" }, html: icon("fa-play") }),
-            el("button", { class: "ctrl-btn", id: "btnFwd10", attrs: { title: "Forward 10s" }, html: icon("fa-rotate-right") }),
+            el("button", { class: "ctrl-btn", id: "btnBack10", attrs: { title: "Back 10s" }, html: icon("rotate-ccw") }),
+            el("button", { class: "ctrl-btn play", id: "btnPlay", attrs: { title: "Play/Pause" }, html: icon("play") }),
+            el("button", { class: "ctrl-btn", id: "btnFwd10", attrs: { title: "Forward 10s" }, html: icon("rotate-cw") }),
             seekWrap,
             speedSelect,
             volWrap,
-            el("button", { class: "ctrl-btn", id: "btnFullscreen", attrs: { title: "Fullscreen" }, html: icon("fa-expand") })
+            el("button", { class: "ctrl-btn", id: "btnFullscreen", attrs: { title: "Fullscreen" }, html: icon("maximize") })
         ]);
 
-        const editorTab = el("div", { class: "editor-tab", html: `<i class="fa-solid fa-circle"></i>player.cpp<span class="badge"><i class="fa-solid fa-shield"></i>custom controls</span>` });
+        const editorTab = el("div", { class: "editor-tab", html: `${svgIcon("dot", { class: "tab-dot" })}player.cpp<span class="badge">${icon("shield")}custom controls</span>` });
         const editorPanel = el("div", { class: "editor-panel" }, [editorTab, playerShell, controls]);
 
         const kbdHint = el("div", { class: "kbd-hint" }, [
@@ -397,7 +493,7 @@
     }
 
     /* ---------------------------------------------------------------
-       7. NOTES SECTION
+       8. NOTES SECTION
     --------------------------------------------------------------- */
     function hasRealLink(url) {
         if (!url) return false;
@@ -426,10 +522,10 @@
         }, [
             el("div", { class: "note-top" }, [
                 el("span", { class: "note-num", text: "#" + (i + 1) }),
-                el("i", { class: `fa-${isDone ? "solid" : "regular"} fa-circle-check note-check` })
+                el("span", { html: svgIcon(isDone ? "check-circle-fill" : "circle", { class: "note-check" }) })
             ]),
             el("div", { class: "note-title", text: title }),
-            el("div", { class: "note-open-hint", html: `${icon("fa-arrow-up-right-from-square")}${isDone ? "open note" : "no link yet"}` })
+            el("div", { class: "note-open-hint", html: `${icon("external-link")}${isDone ? "open note" : "no link yet"}` })
         ]);
 
         card.addEventListener("click", () => {
@@ -440,15 +536,15 @@
     }
 
     function buildNotesSection() {
-        const head = buildSectionHead("fa-book-bookmark", "02", "my notes", `${topics.length} topics · Bro Code sequence`);
+        const head = buildSectionHead("book", "02", "my notes", `${topics.length} topics · Bro Code sequence`);
         const intro = el("p", {
             class: "notes-intro",
-            html: `One card per topic, in course order. Add your real note link in the <code>noteLinks</code> array in the code — once a topic has a real link, it's automatically counted as done and the card unlocks so you can click it to open the note.`
+            html: `Add a real link in <code>noteLinks</code> to mark a topic done and unlock its card.`
         });
 
         const searchInput = el("input", { class: "search-input", id: "noteSearch", attrs: { type: "text", placeholder: "search topics…" } });
         const searchWrap = el("div", { class: "search-wrap" }, [
-            el("i", { class: "fa-solid fa-magnifying-glass" }),
+            el("span", { html: icon("search") }),
             searchInput
         ]);
 
@@ -463,19 +559,14 @@
             });
         });
 
-        const hint = el("div", {
-            class: "note-hint",
-            html: `${icon("fa-circle-info")}<span>tip: open this file in a text editor and fill the <b>noteLinks</b> array near the top of the script with your ${topics.length} links, in the same order as the topics.</span>`
-        });
-
-        return el("section", { id: "notes", class: "reveal" }, [head, intro, searchWrap, notesGrid, hint]);
+        return el("section", { id: "notes", class: "reveal" }, [head, intro, searchWrap, notesGrid]);
     }
 
     /* ---------------------------------------------------------------
-       8. PROGRESS SECTION
+       9. PROGRESS SECTION
     --------------------------------------------------------------- */
     function buildProgressSection() {
-        const head = buildSectionHead("fa-chart-pie", "03", "progress", null);
+        const head = buildSectionHead("pie-chart", "03", "progress", null);
 
         const chartCanvas = el("canvas", { id: "progressChart" });
         const chartCenter = el("div", { class: "chart-center" }, [
@@ -496,7 +587,7 @@
         ]);
         const hintRow = el("div", {
             class: "pstat-hint",
-            html: `${icon("fa-circle-info")}a note counts as done once you add its real link in <code>noteLinks</code> — leaving it as <code>""</code> or <code>"#"</code> keeps it not done.`
+            html: `${icon("info")}done = has a real link in <code>noteLinks</code>.`
         });
 
         const streakRow = el("div", { class: "streak-row", id: "streakRow" });
@@ -508,16 +599,16 @@
     }
 
     /* ---------------------------------------------------------------
-       9. FOOTER + TOAST
+       10. FOOTER + TOAST
     --------------------------------------------------------------- */
     function buildFooter() {
         return el("footer", {
-            html: `${icon("fa-heart")}built for my self-taught C++ journey · course by Bro Code`
+            html: `${icon("heart")}built while learning C++ · course by Bro Code`
         });
     }
     function buildToast() {
         return el("div", { class: "toast", id: "toast" }, [
-            el("i", { class: "fa-solid fa-circle-check" }),
+            el("span", { html: svgIcon("check-circle-fill") }),
             el("span", { id: "toastMsg", text: "" })
         ]);
     }
@@ -533,7 +624,7 @@
     }
 
     /* ---------------------------------------------------------------
-       10. ASSEMBLE PAGE
+       11. ASSEMBLE PAGE
     --------------------------------------------------------------- */
     document.body.appendChild(buildTitlebar());
     document.body.appendChild(buildHero());
@@ -544,7 +635,7 @@
     document.body.appendChild(buildToast());
 
     /* ---------------------------------------------------------------
-       11. PROGRESS CHART + STREAK CHIPS
+       12. PROGRESS CHART + STREAK CHIPS
     --------------------------------------------------------------- */
     let progressChart = null;
     function computeStreak() {
@@ -561,8 +652,8 @@
         const streak = computeStreak();
         const done = doneState.filter(Boolean).length;
         row.innerHTML = "";
-        row.appendChild(el("div", { class: "streak-chip", html: `${icon("fa-fire")}${streak} in a row from start` }));
-        row.appendChild(el("div", { class: "streak-chip", html: `${icon("fa-flag-checkered")}${done} total completed` }));
+        row.appendChild(el("div", { class: "streak-chip", html: `${icon("flame")}${streak} in a row` }));
+        row.appendChild(el("div", { class: "streak-chip", html: `${icon("flag")}${done} completed` }));
     }
 
     function updateProgress() {
@@ -615,7 +706,7 @@
     updateProgress();
 
     /* ---------------------------------------------------------------
-       12. CUSTOM YOUTUBE PLAYER
+       13. CUSTOM YOUTUBE PLAYER
     --------------------------------------------------------------- */
     let ytPlayer, ytReady = false, isSeeking = false;
 
@@ -674,8 +765,8 @@
     function setPlayingUI(playing) {
         const btnPlay = document.getElementById("btnPlay");
         const centerPlay = document.getElementById("centerPlay");
-        btnPlay.innerHTML = playing ? icon("fa-pause") : icon("fa-play");
-        centerPlay.innerHTML = playing ? icon("fa-pause") : icon("fa-play");
+        btnPlay.innerHTML = playing ? icon("pause") : icon("play");
+        centerPlay.innerHTML = playing ? icon("pause") : icon("play");
         centerPlay.classList.toggle("playing", playing);
         centerPlay.classList.toggle("is-pause", playing);
     }
@@ -731,9 +822,9 @@
 
     function updateVolIcon(vol, muted) {
         const volIcon = document.getElementById("volIcon");
-        if (muted || vol == 0) volIcon.className = "fa-solid fa-volume-xmark";
-        else if (vol < 50) volIcon.className = "fa-solid fa-volume-low";
-        else volIcon.className = "fa-solid fa-volume-high";
+        if (!volIcon) return;
+        const name = (muted || vol == 0) ? "volume-x" : (vol < 50 ? "volume-1" : "volume-2");
+        volIcon.innerHTML = ICONS[name];
     }
 
     function wireUpControls() {
@@ -831,7 +922,7 @@
     wireUpControls();
 
     /* ---------------------------------------------------------------
-       13. NICE-TO-HAVE: toast the first time a note card is opened
+       14. NICE-TO-HAVE: toast the first time a note card is opened
     --------------------------------------------------------------- */
     document.getElementById("notesGrid").addEventListener("click", e => {
         const card = e.target.closest(".note-card");
