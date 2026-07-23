@@ -1,0 +1,13 @@
+#C++ is a middle level language (its Faster than any other programming languages)
+
+#Download and code editor (VS code)
+
+#C/C++ Extension
+
+#Code Runner Extension (by Jun Han)
+
+#Download and Install the compiler (and after installation check by these commands that the compiler successfully installed or not )
+                          *gcc --version
+                          *g++ --version
+                          *gdb --version
+

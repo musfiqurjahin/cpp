@@ -32,8 +32,8 @@
     // Fill these in, in the same order as `topics` below.
     // "" or "#" = not done yet. A real URL / relative path = done.
     const noteLinks = [
-        "", // 01 - Tutorial
-        "", // 02 - Variables and basic data types
+        "./Contents/1-tutorial/file.txt", // 01 - Tutorial
+        "./Contents/2-variable-and-basic-data-types/", // 02 - Variables and basic data types
         "", // 03 - Const
         "", // 04 - Namespaces
         "", // 05 - Typedef and type aliases
