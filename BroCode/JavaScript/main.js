@@ -32,8 +32,8 @@
     // Fill these in, in the same order as `topics` below.
     // "" or "#" = not done yet. A real URL / relative path = done.
     const noteLinks = [
-        "https://github.com/musfiqurjahin/cpp/tree/main/BroCode/1_tutorial/", // 01 - Tutorial
-        "https://github.com/musfiqurjahin/cpp/tree/main/BroCode/2_variable-and-basic-data-types/", // 02 - Variables and basic data types
+        "https://github.com/musfiqurjahin/cpp/tree/main/BroCode/01_tutorial", // 01 - Tutorial
+        "https://github.com/musfiqurjahin/cpp/tree/main/BroCode/02_variable-and-basic-data-types", // 02 - Variables and basic data types
         "", // 03 - Const
         "", // 04 - Namespaces
         "", // 05 - Typedef and type aliases
