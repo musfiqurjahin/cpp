@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>MediTrack — Medicine Stock Tracker</title>
+
+<!-- Google Fonts: Sora for display, Manrope for body, JetBrains Mono for numbers -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   ROOT VARIABLES — single source of truth for the whole theme
+   ========================================================================== */
+:root{
+  --bg-0:#05070d;
+  --bg-1:#0a0f1c;
+  --glass:rgba(255,255,255,0.045);
+  --glass-strong:rgba(255,255,255,0.075);
+  --glass-border:rgba(255,255,255,0.09);
+  --txt-hi:#eef1f8;
+  --txt-mid:#9aa3b8;
+  --txt-low:#5b6480;
+
+  --accent-cyan:#2fe6c8;
+  --accent-violet:#a37bff;
+  --accent-pink:#ff5fa2;
+
+  --good:#3ee88a;
+  --good-bg:rgba(62,232,138,0.12);
+  --low:#ffcc4d;
+  --low-bg:rgba(255,204,77,0.12);
+  --buy:#ff5f6b;
+  --buy-bg:rgba(255,95,107,0.14);
+
+  --radius-lg:26px;
+  --radius-md:18px;
+  --radius-sm:12px;
+
+  --font-display:'Sora', sans-serif;
+  --font-body:'Manrope', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+html,body{
+  min-height:100vh;
+  background:var(--bg-0);
+  color:var(--txt-hi);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ==========================================================================
+   AMBIENT GRADIENT BACKGROUND — layered radial blobs + grain
+   ========================================================================== */
+.bg-scene{
+  position:fixed; inset:0; z-index:-2; overflow:hidden; background:var(--bg-0);
+}
+.bg-scene::before{
+  content:''; position:absolute; inset:0;
+  background:
+    radial-gradient(700px 500px at 12% -5%, rgba(163,123,255,0.28), transparent 60%),
+    radial-gradient(800px 600px at 110% 10%, rgba(47,230,200,0.22), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(255,95,162,0.16), transparent 60%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 60%, var(--bg-0));
+  animation: drift 22s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  0%{ filter:hue-rotate(0deg) brightness(1); }
+  100%{ filter:hue-rotate(12deg) brightness(1.06); }
+}
+.grain{
+  position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   LAYOUT SHELL
+   ========================================================================== */
+.app{
+  max-width:1180px;
+  margin:0 auto;
+  padding:28px 20px 90px;
+}
+
+/* Header */
+.app-header{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; margin-bottom:26px; flex-wrap:wrap;
+}
+.brand{ display:flex; align-items:center; gap:14px; }
+.brand-mark{
+  width:46px; height:46px; border-radius:14px;
+  background:linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; box-shadow:0 8px 24px -8px rgba(163,123,255,0.6);
+  flex-shrink:0;
+}
+.brand h1{
+  font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em;
+}
+.brand p{ font-size:12.5px; color:var(--txt-mid); margin-top:2px; }
+
+.header-actions{ display:flex; gap:10px; }
+
+/* Connection status pill */
+.conn-pill{
+  display:flex; align-items:center; gap:7px;
+  font-size:12px; color:var(--txt-mid);
+  padding:8px 13px; border-radius:100px;
+  background:var(--glass); border:1px solid var(--glass-border);
+}
+.conn-dot{ width:7px; height:7px; border-radius:50%; background:var(--txt-low); }
+.conn-dot.online{ background:var(--good); box-shadow:0 0 8px var(--good); }
+.conn-dot.offline{ background:var(--buy); box-shadow:0 0 8px var(--buy); }
+
+/* ==========================================================================
+   GLASS BUTTONS
+   ========================================================================== */
+.btn{
+  font-family:var(--font-body); font-weight:600; font-size:13.5px;
+  border:1px solid var(--glass-border); border-radius:100px;
+  background:var(--glass); color:var(--txt-hi);
+  padding:10px 18px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:7px;
+  transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.btn:hover{ background:var(--glass-strong); transform:translateY(-1px); }
+.btn:active{ transform:translateY(0); }
+.btn-primary{
+  background:linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  border:none; color:#04101a; font-weight:700;
+}
+.btn-primary:hover{ filter:brightness(1.08); }
+.btn-icon{ padding:10px; width:38px; height:38px; justify-content:center; }
+.btn-sm{ padding:7px 13px; font-size:12.5px; border-radius:10px; }
+.btn-danger{ color:var(--buy); }
+.btn-danger:hover{ background:var(--buy-bg); border-color:rgba(255,95,107,0.3); }
+
+/* ==========================================================================
+   STATS ROW
+   ========================================================================== */
+.stats-row{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  margin-bottom:22px;
+}
+.stat-card{
+  background:var(--glass); border:1px solid var(--glass-border);
+  border-radius:var(--radius-md); padding:18px 20px;
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  position:relative; overflow:hidden;
+  animation: rise .5s ease backwards;
+}
+.stat-card::after{
+  content:''; position:absolute; top:-40%; right:-20%; width:120px; height:120px;
+  background:radial-gradient(circle, rgba(163,123,255,0.18), transparent 70%);
+  pointer-events:none;
+}
+.stat-label{ font-size:11.5px; color:var(--txt-mid); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+.stat-value{
+  font-family:var(--font-mono); font-size:30px; font-weight:700; margin-top:6px;
+  background:linear-gradient(135deg, var(--txt-hi), var(--txt-mid));
+  -webkit-background-clip:text; background-clip:text;
+}
+.stat-value.warn{ background:linear-gradient(135deg, var(--buy), #ffab8a); -webkit-background-clip:text; background-clip:text; }
+
+/* ==========================================================================
+   TOOLBAR — search + add
+   ========================================================================== */
+.toolbar{ display:flex; gap:10px; margin-bottom:22px; flex-wrap:wrap; }
+.search-wrap{ position:relative; flex:1; min-width:200px; }
+.search-wrap svg{ position:absolute; left:16px; top:50%; transform:translateY(-50%); opacity:.5; }
+#searchInput{
+  width:100%; padding:13px 16px 13px 42px; border-radius:100px;
+  background:var(--glass); border:1px solid var(--glass-border); color:var(--txt-hi);
+  font-family:var(--font-body); font-size:14px; outline:none;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  transition:border-color .15s ease;
+}
+#searchInput:focus{ border-color:rgba(47,230,200,0.5); }
+#searchInput::placeholder{ color:var(--txt-low); }
+
+/* ==========================================================================
+   MEDICINE GRID + CARDS
+   ========================================================================== */
+.med-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:16px;
+}
+.med-card{
+  background:var(--glass); border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg); padding:20px;
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  position:relative; overflow:hidden;
+  transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  animation: rise .45s ease backwards;
+}
+.med-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(255,255,255,0.16);
+  box-shadow:0 20px 40px -20px rgba(0,0,0,0.6);
+}
+.med-card.status-buy{ box-shadow: inset 0 0 0 1px rgba(255,95,107,0.25); }
+
+.med-card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.med-name{ font-family:var(--font-display); font-size:17px; font-weight:700; letter-spacing:-0.01em; word-break:break-word; }
+.med-meta{ font-size:12px; color:var(--txt-mid); margin-top:3px; }
+
+.status-badge{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:100px;
+  white-space:nowrap;
+}
+.status-badge.good{ background:var(--good-bg); color:var(--good); }
+.status-badge.low{ background:var(--low-bg); color:var(--low); }
+.status-badge.buy{ background:var(--buy-bg); color:var(--buy); }
+
+.med-stock-row{ display:flex; align-items:baseline; gap:8px; margin:18px 0 6px; }
+.med-stock{ font-family:var(--font-mono); font-size:38px; font-weight:700; line-height:1; }
+.med-stock-unit{ font-size:13px; color:var(--txt-mid); font-weight:500; }
+
+.med-sub{ font-size:12.5px; color:var(--txt-mid); display:flex; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+.med-sub b{ color:var(--txt-hi); font-family:var(--font-mono); font-weight:600; }
+
+.med-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.med-actions .btn{ flex:1; justify-content:center; }
+
+.empty-state{
+  grid-column:1/-1; text-align:center; padding:70px 20px; color:var(--txt-mid);
+}
+.empty-state .glyph{ font-size:44px; margin-bottom:14px; }
+
+@keyframes rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(3,5,10,0.72);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center; z-index:100;
+  padding:20px; animation:fadeIn .2s ease;
+}
+.modal-overlay.open{ display:flex; }
+@keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+.modal{
+  width:100%; max-width:420px; background:var(--bg-1);
+  border:1px solid var(--glass-border); border-radius:var(--radius-lg);
+  padding:26px; box-shadow:0 30px 80px -20px rgba(0,0,0,0.7);
+  animation:popIn .25s cubic-bezier(.2,.9,.3,1.2);
+  max-height:88vh; overflow-y:auto;
+}
+@keyframes popIn{ from{opacity:0; transform:scale(.94) translateY(8px);} to{opacity:1; transform:scale(1) translateY(0);} }
+
+.modal h2{ font-family:var(--font-display); font-size:19px; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:12px; color:var(--txt-mid); margin-bottom:6px; font-weight:600; }
+.field input{
+  width:100%; padding:11px 14px; border-radius:var(--radius-sm);
+  background:rgba(255,255,255,0.04); border:1px solid var(--glass-border);
+  color:var(--txt-hi); font-family:var(--font-body); font-size:14px; outline:none;
+  transition:border-color .15s ease;
+}
+.field input:focus{ border-color:rgba(47,230,200,0.55); }
+.field-hint{ font-size:11px; color:var(--txt-low); margin-top:5px; }
+
+.modal-actions{ display:flex; gap:10px; margin-top:20px; }
+.modal-actions .btn{ flex:1; justify-content:center; }
+
+.divider{ height:1px; background:var(--glass-border); margin:18px 0; }
+.section-label{ font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--txt-low); font-weight:700; margin-bottom:10px; }
+
+/* Toast */
+.toast-stack{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center;
+  width:100%; max-width:400px; padding:0 16px;
+}
+.toast{
+  background:var(--glass-strong); border:1px solid var(--glass-border);
+  color:var(--txt-hi); padding:12px 18px; border-radius:100px; font-size:13px;
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 12px 30px -10px rgba(0,0,0,0.6);
+  animation: toastIn .3s ease, toastOut .3s ease 2.7s forwards;
+  display:flex; align-items:center; gap:8px; width:100%; justify-content:center;
+}
+.toast.success{ border-color:rgba(62,232,138,0.35); }
+.toast.error{ border-color:rgba(255,95,107,0.35); }
+@keyframes toastIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+@keyframes toastOut{ to{opacity:0; transform:translateY(-6px);} }
+
+/* Offline banner */
+.offline-banner{
+  display:none; align-items:center; gap:8px; font-size:12.5px;
+  background:var(--low-bg); color:var(--low); border:1px solid rgba(255,204,77,0.25);
+  padding:10px 16px; border-radius:var(--radius-sm); margin-bottom:18px;
+}
+.offline-banner.show{ display:flex; }
+
+/* Scrollbar */
+::-webkit-scrollbar{ width:8px; }
+::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:10px; }
+
+/* Responsive */
+@media (max-width:640px){
+  .stats-row{ grid-template-columns:1fr; }
+  .app-header{ flex-direction:column; align-items:flex-start; }
+  .header-actions{ width:100%; }
+  .header-actions .btn{ flex:1; justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-scene"></div>
+<div class="grain"></div>
+
+<div class="app">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">💊</div>
+      <div>
+        <h1>MediTrack</h1>
+        <p>Medicine stock, tracked quietly.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="conn-pill">
+        <span class="conn-dot" id="connDot"></span>
+        <span id="connText">Checking…</span>
+      </div>
+      <button class="btn btn-icon" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="btn btn-primary" id="addMedBtn">+ Add Medicine</button>
+    </div>
+  </header>
+
+  <!-- Offline / no-config banner -->
+  <div class="offline-banner" id="offlineBanner">⚠ <span id="offlineBannerText">You're offline — showing cached data.</span></div>
+
+  <!-- ===================== STATS ===================== -->
+  <section class="stats-row">
+    <div class="stat-card" style="animation-delay:.02s">
+      <div class="stat-label">Total Medicines</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.08s">
+      <div class="stat-label">Total Tablets Left</div>
+      <div class="stat-value" id="statTablets">0</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.14s">
+      <div class="stat-label">Medicines To Buy</div>
+      <div class="stat-value warn" id="statBuy">0</div>
+    </div>
+  </section>
+
+  <!-- ===================== TOOLBAR ===================== -->
+  <section class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search medicines…" />
+    </div>
+  </section>
+
+  <!-- ===================== MEDICINE GRID ===================== -->
+  <section class="med-grid" id="medGrid">
+    <!-- Cards injected by JS -->
+  </section>
+
+</div>
+
+<!-- ===================== TOAST STACK ===================== -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- ===================== ADD / EDIT MEDICINE MODAL ===================== -->
+<div class="modal-overlay" id="medModalOverlay">
+  <div class="modal">
+    <h2 id="medModalTitle">💊 Add Medicine</h2>
+    <form id="medForm">
+      <input type="hidden" id="medId" />
+      <div class="field">
+        <label for="medName">Medicine Name</label>
+        <input type="text" id="medName" placeholder="e.g. Napa Extra" required />
+      </div>
+      <div class="field" id="stockFieldWrap">
+        <label for="medStock">Current Stock (tablets)</label>
+        <input type="number" id="medStock" min="0" step="1" placeholder="e.g. 30" required />
+      </div>
+      <div class="field">
+        <label for="medDaily">Daily Consumption (tablets/day)</label>
+        <input type="number" id="medDaily" min="0" step="0.5" placeholder="e.g. 2" required />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="medCancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="medSaveBtn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== ADD STOCK MODAL ===================== -->
+<div class="modal-overlay" id="stockModalOverlay">
+  <div class="modal">
+    <h2>➕ Add New Stock</h2>
+    <p style="font-size:13px; color:var(--txt-mid); margin-bottom:16px;" id="stockModalSub">Adding stock for <b id="stockModalMedName" style="color:var(--txt-hi);"></b></p>
+    <form id="stockForm">
+      <input type="hidden" id="stockMedId" />
+      <div class="field">
+        <label for="stockAmount">Tablets Bought</label>
+        <input type="number" id="stockAmount" min="1" step="1" placeholder="e.g. 30" required />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="stockCancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Stock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== SETTINGS MODAL ===================== -->
+<div class="modal-overlay" id="settingsModalOverlay">
+  <div class="modal" style="max-width:460px;">
+    <h2>⚙️ Settings</h2>
+
+    <div class="section-label">Firebase Configuration</div>
+    <form id="firebaseForm">
+      <div class="field"><label for="fbApiKey">API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy…" /></div>
+      <div class="field"><label for="fbAuthDomain">Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="project.firebaseapp.com" /></div>
+      <div class="field"><label for="fbProjectId">Project ID</label><input type="text" id="fbProjectId" placeholder="project-id" /></div>
+      <div class="field"><label for="fbStorageBucket">Storage Bucket</label><input type="text" id="fbStorageBucket" placeholder="project.appspot.com" /></div>
+      <div class="field"><label for="fbMessagingSenderId">Messaging Sender ID</label><input type="text" id="fbMessagingSenderId" placeholder="1234567890" /></div>
+      <div class="field"><label for="fbAppId">App ID</label><input type="text" id="fbAppId" placeholder="1:123:web:abc" /></div>
+      <div class="field-hint">Saved locally on this device. Required to sync stock across your devices.</div>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="section-label">Telegram Bot Notifications</div>
+    <form id="telegramForm">
+      <div class="field"><label for="tgBotToken">Bot Token</label><input type="text" id="tgBotToken" placeholder="123456:ABC-DEF…" /></div>
+      <div class="field"><label for="tgChatId">Chat ID</label><input type="text" id="tgChatId" placeholder="e.g. 987654321" /></div>
+      <div class="field-hint">Alerts fire automatically when a medicine drops to 5 tablets or fewer.</div>
+    </form>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" id="sendTestBtn">Send Test Message</button>
+      <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+    </div>
+    <button type="button" class="btn" id="settingsCloseBtn" style="width:100%; margin-top:10px; justify-content:center;">Close</button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     FIREBASE SDK (compat build — simplest for a single-file, no-bundler app)
+     ========================================================================== -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ============================================================================
+   MEDICINE STOCK TRACKER — application logic
+   Pure vanilla JS. No frameworks, no build step.
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. CONSTANTS & GLOBAL STATE
+   ---------------------------------------------------------------------------- */
+const LS_KEYS = {
+  CACHE:      'meditrack_cache_v1',      // last known Firestore data (offline fallback)
+  SETTINGS:   'meditrack_settings_v1'    // Firebase config + Telegram credentials
+};
+
+const STATUS = {
+  GOOD: { key: 'good', label: 'Good',    icon: '🟢', threshold: 10 }, // > 10
+  LOW:  { key: 'low',  label: 'Low',     icon: '🟡' },                 // 6-10
+  BUY:  { key: 'buy',  label: 'Buy Now', icon: '🔴' }                  // <= 5
+};
+
+let db = null;                 // Firestore instance (null until Firebase configured)
+let firestoreUnsubscribe = null;
+let medicines = [];             // in-memory list of medicine objects (mirrors Firestore / cache)
+let settings = { firebase: {}, telegram: {} };
+let editingMedId = null;        // currently-edited medicine id, or null when adding
+
+/* ----------------------------------------------------------------------------
+   2. UTILITIES
+   ---------------------------------------------------------------------------- */
+
+// Returns today's date as YYYY-MM-DD (local date, no time component).
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Whole days between two YYYY-MM-DD strings (b - a), using UTC noon to dodge DST edge cases.
+function daysBetween(aStr, bStr) {
+  const a = new Date(aStr + 'T12:00:00');
+  const b = new Date(bStr + 'T12:00:00');
+  return Math.floor((b - a) / 86400000);
+}
+
+function formatDateNice(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+}
+
+function getStatus(stock) {
+  if (stock > STATUS.GOOD.threshold) return STATUS.GOOD;
+  if (stock >= 6) return STATUS.LOW;
+  return STATUS.BUY;
+}
+
+function showToast(message, type = 'default') {
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ----------------------------------------------------------------------------
+   3. LOCAL SETTINGS (Firebase config + Telegram credentials)
+   ---------------------------------------------------------------------------- */
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(LS_KEYS.SETTINGS);
+    settings = raw ? JSON.parse(raw) : { firebase: {}, telegram: {} };
+  } catch (e) {
+    settings = { firebase: {}, telegram: {} };
+  }
+}
+
+function saveSettingsToStorage() {
+  localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(settings));
+}
+
+function populateSettingsForm() {
+  const fb = settings.firebase || {};
+  const tg = settings.telegram || {};
+  document.getElementById('fbApiKey').value = fb.apiKey || '';
+  document.getElementById('fbAuthDomain').value = fb.authDomain || '';
+  document.getElementById('fbProjectId').value = fb.projectId || '';
+  document.getElementById('fbStorageBucket').value = fb.storageBucket || '';
+  document.getElementById('fbMessagingSenderId').value = fb.messagingSenderId || '';
+  document.getElementById('fbAppId').value = fb.appId || '';
+  document.getElementById('tgBotToken').value = tg.botToken || '';
+  document.getElementById('tgChatId').value = tg.chatId || '';
+}
+
+/* ----------------------------------------------------------------------------
+   4. LOCAL CACHE (offline fallback mirror of Firestore data)
+   ---------------------------------------------------------------------------- */
+
+function saveCache(list) {
+  localStorage.setItem(LS_KEYS.CACHE, JSON.stringify(list));
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(LS_KEYS.CACHE);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   5. FIREBASE / FIRESTORE
+   ---------------------------------------------------------------------------- */
+
+function hasFirebaseConfig() {
+  const fb = settings.firebase || {};
+  return !!(fb.apiKey && fb.projectId && fb.appId);
+}
+
+function initFirebase() {
+  if (!hasFirebaseConfig()) {
+    setConnectionState('offline', 'No Firebase config');
+    return;
+  }
+  try {
+    // Avoid re-initializing if an app already exists.
+    if (!firebase.apps.length) {
+      firebase.initializeApp(settings.firebase);
+    }
+    db = firebase.firestore();
+    listenToMedicines();
+  } catch (err) {
+    console.error('Firebase init failed:', err);
+    setConnectionState('offline', 'Firebase init failed');
+    showToast('Firebase failed to initialize — check Settings.', 'error');
+  }
+}
+
+// Real-time listener: keeps `medicines` in sync across all devices.
+function listenToMedicines() {
+  if (!db) return;
+  if (firestoreUnsubscribe) firestoreUnsubscribe(); // avoid duplicate listeners
+
+  firestoreUnsubscribe = db.collection('medicines').onSnapshot(
+    (snapshot) => {
+      medicines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      saveCache(medicines);
+      setConnectionState('online');
+      applyAutoDeductionToAll();  // recompute stock-vs-time on every fresh sync
+      renderAll();
+    },
+    (err) => {
+      console.error('Firestore listen error:', err);
+      setConnectionState('offline', 'Sync error — showing cache');
+      medicines = loadCache();
+      renderAll();
+    }
+  );
+}
+
+// Returns the new medicine's id on success, or null on failure.
+async function fsAdd(medicine) {
+  if (db) {
+    try {
+      const ref = await db.collection('medicines').add(medicine);
+      return ref.id;
+    } catch (e) {
+      console.error(e);
+      showToast('Could not save to cloud — check connection.', 'error');
+      return null;
+    }
+  }
+  // No Firebase configured: fall back to local-only storage.
+  medicine.id = 'local_' + Date.now();
+  medicines.push(medicine);
+  saveCache(medicines);
+  renderAll();
+  return medicine.id;
+}
+
+async function fsUpdate(id, patch) {
+  if (db && !String(id).startsWith('local_')) {
+    try { await db.collection('medicines').doc(id).update(patch); return true; }
+    catch (e) { console.error(e); showToast('Could not sync update — check connection.', 'error'); return false; }
+  }
+  const med = medicines.find(m => m.id === id);
+  if (med) Object.assign(med, patch);
+  saveCache(medicines);
+  renderAll();
+  return true;
+}
+
+async function fsDelete(id) {
+  if (db && !String(id).startsWith('local_')) {
+    try { await db.collection('medicines').doc(id).delete(); return true; }
+    catch (e) { console.error(e); showToast('Could not delete from cloud.', 'error'); return false; }
+  }
+  medicines = medicines.filter(m => m.id !== id);
+  saveCache(medicines);
+  renderAll();
+  return true;
+}
+
+function setConnectionState(state, label) {
+  const dot = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  const banner = document.getElementById('offlineBanner');
+  const bannerText = document.getElementById('offlineBannerText');
+
+  dot.className = 'conn-dot ' + (state === 'online' ? 'online' : 'offline');
+  text.textContent = label || (state === 'online' ? 'Synced' : 'Offline');
+
+  if (state === 'online') {
+    banner.classList.remove('show');
+  } else {
+    bannerText.textContent = label === 'No Firebase config'
+      ? "Firebase isn't configured yet — open Settings to enable cross-device sync. Showing cached data."
+      : "You're offline — showing cached data.";
+    banner.classList.add('show');
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   6. AUTOMATIC STOCK DEDUCTION
+   Every time the app has fresh data, compare lastUpdated to today and
+   deduct (daysPassed × dailyConsumption), never going below zero.
+   ---------------------------------------------------------------------------- */
+
+function applyAutoDeductionToAll() {
+  const today = todayStr();
+  medicines.forEach(med => {
+    if (!med.lastUpdated) return;
+    const days = daysBetween(med.lastUpdated, today);
+    if (days > 0) {
+      const deducted = days * Number(med.dailyConsumption || 0);
+      const newStock = Math.max(0, Number(med.stock || 0) - deducted);
+      const previousStock = med.stock;
+      med.stock = newStock;
+      med.lastUpdated = today;
+      // Persist the deduction quietly, then evaluate whether an alert is due.
+      fsUpdate(med.id, { stock: newStock, lastUpdated: today })
+        .then(() => evaluateAlert(med, previousStock));
+    }
+  });
+}
+
+/* ----------------------------------------------------------------------------
+   7. TELEGRAM ALERTS
+   Sends a message once when stock crosses down to <= 5, and re-arms only
+   after the stock has gone back above 5 (tracked via `alertSent`).
+   ---------------------------------------------------------------------------- */
+
+async function sendTelegramMessage(text) {
+  const tg = settings.telegram || {};
+  if (!tg.botToken || !tg.chatId) {
+    showToast('Add your Telegram Bot Token & Chat ID in Settings first.', 'error');
+    return false;
+  }
+  try {
+    const url = `https://api.telegram.org/bot${tg.botToken}/sendMessage`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tg.chatId, text })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.description || 'Telegram API error');
+    return true;
+  } catch (err) {
+    console.error('Telegram send failed:', err);
+    showToast('Telegram message failed to send.', 'error');
+    return false;
+  }
+}
+
+// Decides whether to fire (or re-arm) the low-stock alert for one medicine.
+async function evaluateAlert(med, previousStock) {
+  const isLowNow = med.stock <= 5;
+  const wasAboveBefore = previousStock === undefined || previousStock > 5;
+
+  if (isLowNow && !med.alertSent) {
+    const message =
+      `💊 Medicine Alert\n\n` +
+      `Medicine: ${med.name}\n\n` +
+      `Stock Left: ${med.stock} Tablets\n\n` +
+      `⚠ Time to buy new medicine.`;
+    const sent = await sendTelegramMessage(message);
+    if (sent) {
+      med.alertSent = true;
+      fsUpdate(med.id, { alertSent: true });
+    }
+  } else if (!isLowNow && med.alertSent) {
+    // Stock climbed back above 5 — re-arm so a future drop alerts again.
+    med.alertSent = false;
+    fsUpdate(med.id, { alertSent: false });
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   8. RENDERING
+   ---------------------------------------------------------------------------- */
+
+function renderAll() {
+  renderStats();
+  renderMedicineGrid(document.getElementById('searchInput').value);
+}
+
+function renderStats() {
+  const total = medicines.length;
+  const tablets = medicines.reduce((sum, m) => sum + Number(m.stock || 0), 0);
+  const toBuy = medicines.filter(m => Number(m.stock) <= 5).length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statTablets').textContent = tablets;
+  document.getElementById('statBuy').textContent = toBuy;
+}
+
+function renderMedicineGrid(filterText = '') {
+  const grid = document.getElementById('medGrid');
+  const query = filterText.trim().toLowerCase();
+
+  const list = medicines
+    .filter(m => m.name.toLowerCase().includes(query))
+    .sort((a, b) => Number(a.stock) - Number(b.stock)); // most urgent first
+
+  grid.innerHTML = '';
+
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="glyph">💊</div>
+        <p>${medicines.length === 0 ? 'No medicines yet — add your first one.' : 'No medicines match your search.'}</p>
+      </div>`;
+    return;
+  }
+
+  list.forEach((med, i) => grid.appendChild(createMedicineCard(med, i)));
+}
+
+function createMedicineCard(med, index) {
+  const status = getStatus(Number(med.stock));
+  const card = document.createElement('div');
+  card.className = `med-card status-${status.key}`;
+  card.style.animationDelay = `${Math.min(index * 0.04, 0.4)}s`;
+
+  card.innerHTML = `
+    <div class="med-card-top">
+      <div>
+        <div class="med-name">${escapeHtml(med.name)}</div>
+        <div class="med-meta">Updated ${formatDateNice(med.lastUpdated)}</div>
+      </div>
+      <span class="status-badge ${status.key}">${status.icon} ${status.label}</span>
+    </div>
+
+    <div class="med-stock-row">
+      <span class="med-stock">${Number(med.stock)}</span>
+      <span class="med-stock-unit">tablets left</span>
+    </div>
+
+    <div class="med-sub">
+      <span>Daily: <b>${Number(med.dailyConsumption)}</b>/day</span>
+    </div>
+
+    <div class="med-actions">
+      <button class="btn btn-sm" data-action="add-stock" data-id="${med.id}">➕ Add Stock</button>
+      <button class="btn btn-sm" data-action="edit" data-id="${med.id}">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" data-action="delete" data-id="${med.id}">🗑️</button>
+    </div>
+  `;
+  return card;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ----------------------------------------------------------------------------
+   9. CRUD ACTIONS (add / edit / add-stock / delete)
+   ---------------------------------------------------------------------------- */
+
+function openAddMedicineModal() {
+  editingMedId = null;
+  document.getElementById('medModalTitle').textContent = '💊 Add Medicine';
+  document.getElementById('medForm').reset();
+  document.getElementById('stockFieldWrap').style.display = 'block';
+  document.getElementById('medStock').required = true;
+  openModal('medModalOverlay');
+}
+
+function openEditMedicineModal(id) {
+  const med = medicines.find(m => m.id === id);
+  if (!med) return;
+  editingMedId = id;
+  document.getElementById('medModalTitle').textContent = '✏️ Edit Medicine';
+  document.getElementById('medName').value = med.name;
+  document.getElementById('medDaily').value = med.dailyConsumption;
+  // Stock is not editable here — use "Add Stock" for stock changes, per spec.
+  document.getElementById('stockFieldWrap').style.display = 'none';
+  document.getElementById('medStock').required = false;
+  openModal('medModalOverlay');
+}
+
+async function handleMedFormSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('medName').value.trim();
+  const daily = Number(document.getElementById('medDaily').value);
+
+  if (editingMedId) {
+    await fsUpdate(editingMedId, { name, dailyConsumption: daily });
+    showToast('Medicine updated.', 'success');
+  } else {
+    const stock = Number(document.getElementById('medStock').value);
+    const newMed = {
+      name,
+      stock,
+      dailyConsumption: daily,
+      lastUpdated: todayStr(),
+      alertSent: false // not yet alerted — evaluateAlert below will fire one if already low
+    };
+    const newId = await fsAdd(newMed);
+    showToast('Medicine added.', 'success');
+    // Immediately check whether the newly-added medicine is already low,
+    // using the local object directly rather than waiting on the snapshot listener.
+    if (newId) {
+      newMed.id = newId;
+      if (!medicines.some(m => m.id === newId)) medicines.push(newMed);
+      evaluateAlert(newMed, undefined);
+    }
+  }
+
+  closeModal('medModalOverlay');
+  renderAll();
+}
+
+function openAddStockModal(id) {
+  const med = medicines.find(m => m.id === id);
+  if (!med) return;
+  document.getElementById('stockMedId').value = id;
+  document.getElementById('stockModalMedName').textContent = med.name;
+  document.getElementById('stockAmount').value = '';
+  openModal('stockModalOverlay');
+}
+
+async function handleStockFormSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('stockMedId').value;
+  const bought = Number(document.getElementById('stockAmount').value);
+  const med = medicines.find(m => m.id === id);
+  if (!med || bought <= 0) return;
+
+  const previousStock = med.stock;
+  const newStock = Number(med.stock) + bought;
+
+  await fsUpdate(id, { stock: newStock, lastUpdated: todayStr() });
+  med.stock = newStock;
+  med.lastUpdated = todayStr();
+  await evaluateAlert(med, previousStock);
+
+  showToast(`Added ${bought} tablets.`, 'success');
+  closeModal('stockModalOverlay');
+  renderAll();
+}
+
+async function handleDelete(id) {
+  const med = medicines.find(m => m.id === id);
+  if (!med) return;
+  const confirmed = confirm(`Delete "${med.name}"? This cannot be undone.`);
+  if (!confirmed) return;
+  await fsDelete(id);
+  showToast('Medicine deleted.', 'success');
+  renderAll();
+}
+
+/* ----------------------------------------------------------------------------
+   10. SETTINGS MODAL
+   ---------------------------------------------------------------------------- */
+
+function openSettingsModal() {
+  populateSettingsForm();
+  openModal('settingsModalOverlay');
+}
+
+function saveSettingsFromForm() {
+  settings.firebase = {
+    apiKey: document.getElementById('fbApiKey').value.trim(),
+    authDomain: document.getElementById('fbAuthDomain').value.trim(),
+    projectId: document.getElementById('fbProjectId').value.trim(),
+    storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+    appId: document.getElementById('fbAppId').value.trim()
+  };
+  settings.telegram = {
+    botToken: document.getElementById('tgBotToken').value.trim(),
+    chatId: document.getElementById('tgChatId').value.trim()
+  };
+  saveSettingsToStorage();
+  showToast('Settings saved.', 'success');
+  closeModal('settingsModalOverlay');
+
+  // Re-initialize Firebase in case the config just changed.
+  initFirebase();
+}
+
+async function handleSendTestMessage() {
+  // Use whatever is currently typed in the form, even if not saved yet.
+  const tempTelegram = {
+    botToken: document.getElementById('tgBotToken').value.trim(),
+    chatId: document.getElementById('tgChatId').value.trim()
+  };
+  if (!tempTelegram.botToken || !tempTelegram.chatId) {
+    showToast('Enter both Bot Token and Chat ID first.', 'error');
+    return;
+  }
+  const originalTelegram = settings.telegram;
+  settings.telegram = tempTelegram; // temporarily use form values
+  const ok = await sendTelegramMessage('✅ MediTrack test message — your Telegram bot is connected correctly.');
+  settings.telegram = originalTelegram;
+  if (ok) showToast('Test message sent — check Telegram!', 'success');
+}
+
+/* ----------------------------------------------------------------------------
+   11. EVENT WIRING
+   ---------------------------------------------------------------------------- */
+
+function wireEvents() {
+  document.getElementById('addMedBtn').addEventListener('click', openAddMedicineModal);
+  document.getElementById('medCancelBtn').addEventListener('click', () => closeModal('medModalOverlay'));
+  document.getElementById('medForm').addEventListener('submit', handleMedFormSubmit);
+
+  document.getElementById('stockCancelBtn').addEventListener('click', () => closeModal('stockModalOverlay'));
+  document.getElementById('stockForm').addEventListener('submit', handleStockFormSubmit);
+
+  document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  document.getElementById('settingsCloseBtn').addEventListener('click', () => closeModal('settingsModalOverlay'));
+  document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
+  document.getElementById('sendTestBtn').addEventListener('click', handleSendTestMessage);
+
+  // Close modals when clicking the dim overlay itself.
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // Real-time search.
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    renderMedicineGrid(e.target.value);
+  });
+
+  // Delegated clicks for dynamically-rendered card buttons.
+  document.getElementById('medGrid').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    if (action === 'add-stock') openAddStockModal(id);
+    if (action === 'edit') openEditMedicineModal(id);
+    if (action === 'delete') handleDelete(id);
+  });
+
+  // Browser online/offline signals.
+  window.addEventListener('online', () => { if (db) setConnectionState('online'); });
+  window.addEventListener('offline', () => setConnectionState('offline', "You're offline"));
+}
+
+/* ----------------------------------------------------------------------------
+   12. BOOTSTRAP
+   ---------------------------------------------------------------------------- */
+
+function init() {
+  loadSettings();
+  medicines = loadCache();       // show cached data instantly, even before Firebase connects
+  applyAutoDeductionToAll();
+  renderAll();
+  wireEvents();
+  initFirebase();                // connects (or shows offline state if unconfigured)
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
